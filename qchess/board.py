@@ -51,6 +51,23 @@ class Vector2:
     def __hash__(self):
         return hash((self.x, self.y))
     
+    def as_board_space(self) -> str:
+        """
+        Returns the board space representation of the vector.
+        """
+        return f"{chr(self.x + ord('A'))}{self.y + 1}"
+    
+    @staticmethod
+    def from_board_space(space: str) -> 'Vector2':
+        """
+        Converts a board space string to a Vector2 instance.
+        """
+        if len(space) != 2:
+            raise ValueError("Invalid board space format.")
+        x = ord(space[0].upper()) - ord('A')
+        y = int(space[1]) - 1
+        return Vector2(x, y)
+    
     
 Vector2.zero = Vector2(0, 0)
 Vector2.up = Vector2(0, 1)
@@ -83,3 +100,5 @@ class Board:
             print("  ---------------------------------")
         print("    A   B   C   D   E   F   G   H")
         
+    def __getitem__(self, position: Vector2):
+        return self.board[position.y][position.x]

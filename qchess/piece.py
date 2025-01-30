@@ -31,13 +31,26 @@ class Piece(ABC):
         if old_position in self.positions:
             for path in new_positions:
                 for position in path:
-                    pass
+                    if self.board[position] is not None:
+                        captured = self.board[position].capture()
+                        if captured:
+                            break
 
             # Remove the old position
             del self.positions[old_position]
         else:
             raise ValueError("Old position not found in the piece's positions.")
         
+    def try_capture(self, position: Vector2):
+        if position in self.positions:
+            exists = self.board[position].collapse(position)
+            if exists:
+                self.capture()
+                return True
+            else:
+                return False
+        else:
+            raise ValueError("Position not found in the piece's positions.")
 
     def capture(self):
         if len(self.positions) == 1:
