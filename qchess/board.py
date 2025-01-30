@@ -68,6 +68,12 @@ class Vector2:
         y = int(space[1]) - 1
         return Vector2(x, y)
     
+    def in_range(self) -> bool:
+        """
+        Checks if the vector is within the bounds of the chess board.
+        """
+        return 0 <= self.x < 8 and 0 <= self.y < 8
+    
     
 Vector2.zero = Vector2(0, 0)
 Vector2.up = Vector2(0, 1)

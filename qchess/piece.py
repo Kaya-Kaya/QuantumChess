@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import random
 from board import Vector2, Board
 from colorama import Fore, Style
+from typing import override
 
 class Piece(ABC):
     def __init__(self, white: bool):
@@ -15,10 +16,10 @@ class Piece(ABC):
 
     @abstractmethod
     def get_moves(self, position: Vector2) -> list[list[Vector2]]:
-        '''
+        """
         Returns a list of possible moves for the piece from the given position.
         For example, rook: [[left, left, left], [up, up, up], [right], [down, down]]
-        '''
+        """
         pass
 
     def get_moves_all_states(self) -> dict[Vector2, list[Vector2]]:
@@ -60,10 +61,10 @@ class Piece(ABC):
         
 
     def collapse(self, position: Vector2) -> bool:
-        '''
+        """
         Collapses one of the states.
         Returns True if this state becomes realized, False otherwise.
-        '''
+        """
 
         if position in self.positions:
             probability = self.positions[position]
@@ -85,14 +86,37 @@ class Piece(ABC):
 
     @abstractmethod
     def character(self) -> str:
-        '''
+        """
         Returns the character representation of the piece.
-        '''
+        """
         pass
 
+
 class Pawn(Piece):
+    def __init__(self, white):
+        super().__init__(white)
+        self.moved = False
+
+    @override
     def get_moves(self, position):
-        pass
+        moves = []
+        for i in range(1, 3):
+            pos = position + (Vector2.up if self.white else Vector2.down) * i
+            
+            if not pos.in_range() or (self.board[pos] is not None and (self.board[pos].white == self.white or self.board[pos].positions == 1)):
+                break
+
+            moves.append(pos)
+
+            if self.moved:
+                break
+
+        return [moves]
+
+    @override
+    def move(self, old_position, new_positions):
+        super().move(old_position, new_positions)
+        self.moved = True
 
     def character(self):
         return "P"
