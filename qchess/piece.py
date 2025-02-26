@@ -2,7 +2,6 @@ from abc import ABC, abstractmethod
 import random
 from board import Vector2, Board
 from colorama import Fore, Style
-from typing import override
 
 class Piece(ABC):
     def __init__(self, white: bool):
@@ -57,7 +56,7 @@ class Piece(ABC):
         if len(self.positions) == 1:
             del self.positions[(self.positions.keys())[0]]
         else:
-            raise ValueError("Cannot capture a piece with multiple states.")
+            raise ValueError("Cannot capture a piece with multiple states.") # Why can't you capture a piece with multiple states? 
         
 
     def collapse(self, position: Vector2) -> bool:
@@ -97,7 +96,6 @@ class Pawn(Piece):
         super().__init__(white)
         self.moved = False
 
-    @override
     def get_moves(self, position):
         moves = []
         for i in range(1, 3):
@@ -113,7 +111,6 @@ class Pawn(Piece):
 
         return [moves]
 
-    @override
     def move(self, old_position, new_positions):
         super().move(old_position, new_positions)
         self.moved = True
