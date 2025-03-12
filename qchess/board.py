@@ -1,3 +1,5 @@
+from colorama import Fore, Style
+
 class Vector2:
     """
     A class to represent a 2D vector.
@@ -93,18 +95,21 @@ class Board:
                     self.pieces[piece] = Vector2(col, row)
                     piece.place(Vector2(col, row), self)
 
-    def display(self):
-        print("  ---------------------------------")
+    def display(self, moves: list[Vector2] = None, is_white_moves: bool = None):
+        print("\n  ---------------------------------")
         for i, row in enumerate(self.board[::-1]):
             print(f"{8 - i} | ", end="")
-            for piece in row:
+            for j, piece in enumerate(row):
                 if piece:
                     print(f"{piece} | ", end="")
                 else:
-                    print(f"  | ", end="")
+                    if moves is not None and Vector2(j, 7 - i) in moves:
+                        print(f"{Fore.YELLOW if is_white_moves else Fore.MAGENTA}O{Style.RESET_ALL} | ", end="")
+                    else:
+                        print(f"  | ", end="")
             print()
             print("  ---------------------------------")
-        print("    A   B   C   D   E   F   G   H")
+        print("    A   B   C   D   E   F   G   H\n")
         
     def __getitem__(self, position: Vector2):
         return self.board[position.y][position.x]

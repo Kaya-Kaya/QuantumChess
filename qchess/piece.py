@@ -8,6 +8,8 @@ class Piece(ABC):
         self.board = None
         self.positions = {}
         self.white = white
+        self.selected = False
+        self.path = False
 
     def place(self, start_position: Vector2, board: Board):
         self.board = board
@@ -82,7 +84,12 @@ class Piece(ABC):
             raise ValueError("Position not found in the piece's positions.")
         
     def __repr__(self):
-        return f"{Fore.BLUE if self.white else Fore.RED}{self.character()}{Style.RESET_ALL}"
+        char = chr(ord(self.character()) + ((ord('Ⓐ') - ord('A')) if self.path else 0))
+
+        if not self.selected:
+            return f"{Fore.BLUE if self.white else Fore.RED}{char}{Style.RESET_ALL}"
+        else:
+            return f"{Fore.YELLOW if self.white else Fore.MAGENTA}{char}{Style.RESET_ALL}"
 
     @abstractmethod
     def character(self) -> str:
