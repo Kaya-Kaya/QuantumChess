@@ -1,5 +1,6 @@
 from piece import *
 from board import *
+from game import *
 
 if __name__ == "__main__":
     start_board = [[Rook(False), Knight(False), Bishop(False), Queen(False), King(False), Bishop(False), Knight(False), Rook(False)],
@@ -12,4 +13,5 @@ if __name__ == "__main__":
                    [Rook(True), Knight(True), Bishop(True), Queen(True), King(True), Bishop(True), Knight(True), Rook(True)]]
     
     board = Board(start_board)
-    board.display()
+    game = Game(board)
+    game.start()
