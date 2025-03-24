@@ -3,8 +3,6 @@ import random
 from board import Vector2, Board
 from colorama import Fore, Style
 
-moveList = [Vector2.up, Vector2.right, Vector2.down, Vector2.down]
-
 class Piece(ABC):
 
     def __init__(self, white: bool):
@@ -12,7 +10,6 @@ class Piece(ABC):
         self.positions = {}
         self.white = white
         self.selected = False
-        self.path = False
 
     def place(self, start_position: Vector2, board: Board):
         self.board = board
@@ -34,16 +31,27 @@ class Piece(ABC):
 
     def move(self, old_position: Vector2, new_positions: list[list[Vector2]]):
         if old_position in self.positions:
+            # Remove the old position
+            self.board[old_position] = None
+            probability = self.positions[old_position]
+            del self.positions[old_position]
+
             for path in new_positions:
+                final_position = old_position
                 for position in path:
                     if self.board[position] is not None:
                         captured = self.board[position].try_capture(position)
                         if captured:
-                            self.board[position] = self
+                            final_position = position
                             break
-
-            # Remove the old position
-            del self.positions[old_position]
+                    else:
+                        final_position = position
+                    
+                self.board[final_position] = self
+                if final_position not in self.positions:
+                    self.positions[final_position] = probability / len(new_positions)
+                else:
+                    self.positions[final_position] += probability / len(new_positions)
         else:
             raise ValueError("Old position not found in the piece's positions.")
         
@@ -60,7 +68,7 @@ class Piece(ABC):
 
     def capture(self) -> None:
         if len(self.positions) == 1:
-            del self.positions[(self.positions.keys())[0]]
+            del self.positions[list(self.positions.keys())[0]]
         else:
             raise ValueError("Cannot capture a piece with multiple states.") # Why can't you capture a piece with multiple states? 
         
@@ -86,13 +94,11 @@ class Piece(ABC):
         else:
             raise ValueError("Position not found in the piece's positions.")
         
-    def __repr__(self):
-        char = chr(ord(self.character()) + ((ord('Ⓐ') - ord('A')) if self.path else 0))
+    def path_char(self):
+        return f"{Fore.YELLOW if self.white else Fore.MAGENTA}{self.character()}{Style.RESET_ALL}"
 
-        if not self.selected:
-            return f"{Fore.BLUE if self.white else Fore.RED}{char}{Style.RESET_ALL}"
-        else:
-            return f"{Fore.YELLOW if self.white else Fore.MAGENTA}{char}{Style.RESET_ALL}"
+    def __repr__(self):
+        return f"{Fore.BLUE if self.white else Fore.RED}{self.character()}{Style.RESET_ALL}"
 
     @abstractmethod
     def character(self) -> str:
@@ -113,7 +119,7 @@ class Pawn(Piece):
         for i in range(1, 3):
             pos = position + (Vector2.up if self.white else Vector2.down) * i
             
-            if not pos.in_range() or (self.board[pos] is not None and (self.board[pos].white == self.white or self.board[pos].positions == 1)):
+            if not pos.in_range() or (self.board[pos] is not None and len(self.board[pos].positions) == 1):
                 break
 
             moves.append(pos)
@@ -125,49 +131,51 @@ class Pawn(Piece):
             pos = position + (Vector2.up if self.white else Vector2.down) + Vector2.up * sign
 
         return [moves]
+    
+    def move(self, old_position, new_positions):
+        super().move(old_position, new_positions)
+        self.moved = True
 
     def character(self):
         return "P"
 
 class Rook(Piece):
-    def __init__(self, white): # Is this needed for non-pawn pieces?
-        super().__init__(white)
-        self.moved = False
-
     def get_moves(self, position):
         moves = []
         #Ben new code
 
-        for direction in moveList:
+        for direction in Vector2.directions:
+            move_set = []
             for i in range(1, 8): # Can only move up to seven squares
                 pos = position + direction * i
 
-                if not pos.in_range() or (self.board[pos] is not None and (self.board[pos].white == self.white or self.board[pos].positions == 1)):
+                if not pos.in_range():
+                    break
+                elif self.board[pos] is not None and len(self.board[pos].positions) == 1:
+                    if self.white != self.board[pos].white:
+                        move_set.append(pos)
                     break
 
-                moves.append(pos)
+                move_set.append(pos)
+            if len(move_set) > 0:
+                moves.append(move_set)
 
-        return [moves]
+        return moves
 
     def character(self):
         return "R"
 
 class Knight(Piece):
-    def __init__(self, white):
-        super().__init__(white)
-        self.moved = False
-
     def get_moves(self, position):
         moves = []
         for sign in range(-1, 2, 2): # For each possible sign (- and +)
             for i in range(4):
-                # Move 3 in desired direction, 1 in perpendicular direction counterclockwise if positive, clockwise if negative
-                pos = position + moveList[i] * 3 + moveList[(i + 1) % 4]  * sign 
+                # Move 2 in desired direction, 1 in perpendicular direction counterclockwise if positive, clockwise if negative
+                pos = position + Vector2.directions[i] * 2 + Vector2.directions[(i + 1) % 4]  * sign 
 
-                if not pos.in_range() or (self.board[pos] is not None and (self.board[pos].white == self.white or self.board[pos].positions == 1)):
-                    break
-
-                moves.append(pos)
+                if pos.in_range() and (self.board[pos] is None or len(self.board[pos].positions) != 1 
+                                       or self.white != self.board[pos].white):
+                    moves.append(pos)
 
         return [moves]
 
@@ -175,81 +183,91 @@ class Knight(Piece):
         return "N"
 
 class Bishop(Piece):
-    def __init__(self, white):
-        super().__init__(white)
-        self.moved = False
-
     def get_moves(self, position):
         moves = []
 
         for j in range(4):
+            move_set = []
             for i in range(1, 8): # Can only move up to seven squares
-                pos = position + moveList[j] * i + moveList[(j + 1) % 4] * i
+                pos = position + Vector2.directions[j] * i + Vector2.directions[(j + 1) % 4] * i
 
-                if not pos.in_range() or (self.board[pos] is not None and (self.board[pos].white == self.white or self.board[pos].positions == 1)):
+                if not pos.in_range():
+                    break
+                elif self.board[pos] is not None and len(self.board[pos].positions) == 1:
+                    if self.white != self.board[pos].white:
+                        move_set.append(pos)
                     break
 
-                moves.append(pos)
+                move_set.append(pos)
 
-        return [moves]
+            if len(move_set) > 0:
+                moves.append(move_set)
+
+        return moves
 
     def character(self):
         return "B"
 
 class Queen(Piece):
-    def __init__(self, white):
-        super().__init__(white)
-        self.moved = False
-
     def get_moves(self, position):
         moves = []
 
         for j in range(4): # First consider diagonals
+            move_set = []
             for i in range(1, 8): # Can only move up to seven squares
-                pos = position + moveList[j] * i + moveList[(j + 1) % 4] * i
+                pos = position + Vector2.directions[j] * i + Vector2.directions[(j + 1) % 4] * i
 
-                if not pos.in_range() or (self.board[pos] is not None and (self.board[pos].white == self.white or self.board[pos].positions == 1)):
+                if not pos.in_range():
+                    break
+                elif self.board[pos] is not None and len(self.board[pos].positions) == 1:
+                    if self.white != self.board[pos].white:
+                        move_set.append(pos)
                     break
 
-                moves.append(pos)
+                move_set.append(pos)
+
+            if len(move_set) > 0:
+                moves.append(move_set)
         
-        for direction in moveList: # Next, consider the horizontal and vertical directiosn
+        for direction in Vector2.directions: # Next, consider the horizontal and vertical directions
+            move_set = []
             for i in range(1, 8): # Can only move up to seven squares
                 pos = position + direction * i
 
-                if not pos.in_range() or (self.board[pos] is not None and (self.board[pos].white == self.white or self.board[pos].positions == 1)):
+                if not pos.in_range():
+                    break
+                elif self.board[pos] is not None and len(self.board[pos].positions) == 1:
+                    if self.white != self.board[pos].white:
+                        move_set.append(pos)
                     break
 
-                moves.append(pos)
+                move_set.append(pos)
+            
+            if len(move_set) > 0:
+                moves.append(move_set)
 
-        return [moves]
+        return moves
 
     def character(self):
         return "Q"
 
 class King(Piece):
-    def __init__(self, white):
-        super().__init__(white)
-        self.moved = False
-
     def get_moves(self, position):
         moves = []
 
         for j in range(4): # First consider diagonals
-            pos = position + moveList[j] + moveList[(j + 1) % 4] 
+            pos = position + Vector2.directions[j] + Vector2.directions[(j + 1) % 4] 
 
-            if not pos.in_range() or (self.board[pos] is not None and (self.board[pos].white == self.white or self.board[pos].positions == 1)):
-                break
-
-            moves.append(pos)
+            if pos.in_range() and (self.board[pos] is None or len(self.board[pos].positions) != 1 
+                                   or self.white != self.board[pos].white):
+                moves.append(pos)
         
-        for direction in moveList: # Next, consider the horizontal and vertical direction
+        for direction in Vector2.directions: # Next, consider the horizontal and vertical direction
             pos = position + direction
 
-            if not pos.in_range() or (self.board[pos] is not None and (self.board[pos].white == self.white or self.board[pos].positions == 1)):
-                break
-
-            moves.append(pos)
+            if pos.in_range() and (self.board[pos] is None or len(self.board[pos].positions) != 1 
+                                   or self.white != self.board[pos].white):
+                moves.append(pos)
 
         return [moves]
 

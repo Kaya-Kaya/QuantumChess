@@ -24,6 +24,7 @@ class Vector2:
     __repr__()
         Returns a string representation of the Vector2 instance.
     """
+    BOARD_SIZE = 8  # 8x8 board
 
     def __init__(self, x: int, y: int):
         self.x = x
@@ -46,6 +47,9 @@ class Vector2:
         if isinstance(other, Vector2):
             return self.x == other.x and self.y == other.y
         return NotImplemented
+
+    def __hash__(self):
+        return self.x * self.BOARD_SIZE + self.y
 
     def __repr__(self):
         return f"Vector2({self.x}, {self.y})"
@@ -74,7 +78,7 @@ class Vector2:
         """
         Checks if the vector is within the bounds of the chess board.
         """
-        return 0 <= self.x < 8 and 0 <= self.y < 8
+        return 0 <= self.x < self.BOARD_SIZE and 0 <= self.y < self.BOARD_SIZE
     
     
 Vector2.zero = Vector2(0, 0)
@@ -82,6 +86,7 @@ Vector2.up = Vector2(0, 1)
 Vector2.down = Vector2(0, -1)
 Vector2.left = Vector2(-1, 0)
 Vector2.right = Vector2(1, 0)
+Vector2.directions = [Vector2.up, Vector2.right, Vector2.down, Vector2.left]
 
 class Board:
     def __init__(self, board: list[list]):
@@ -101,7 +106,10 @@ class Board:
             print(f"{8 - i} | ", end="")
             for j, piece in enumerate(row):
                 if piece:
-                    print(f"{piece} | ", end="")
+                    if moves is not None and Vector2(j, 7 - i) in moves:
+                        print(f"{Fore.YELLOW if is_white_moves else Fore.MAGENTA}{piece.path_char()}{Style.RESET_ALL} | ", end="")
+                    else:
+                        print(f"{piece} | ", end="")
                 else:
                     if moves is not None and Vector2(j, 7 - i) in moves:
                         print(f"{Fore.YELLOW if is_white_moves else Fore.MAGENTA}O{Style.RESET_ALL} | ", end="")
@@ -113,3 +121,6 @@ class Board:
         
     def __getitem__(self, position: Vector2):
         return self.board[position.y][position.x]
+    
+    def __setitem__(self, position: Vector2, piece):
+        self.board[position.y][position.x] = piece

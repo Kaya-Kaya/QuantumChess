@@ -14,7 +14,7 @@ class Game:
         """
         if ((len(input_str) != 2) or not (input_str[0] >= 'A' and input_str[0] <= 'H') 
                                   or not (input_str[1] >= '1' and input_str[1] <= '8')):
-            raise ValueError("Invalid input. Should be [A-H][1-9].\n")
+            raise ValueError("Invalid input. Should be [A-H][1-8].\n")
             
         return Vector2(ord(input_str[0]) - ord('A'), ord(input_str[1]) - ord('1'))
 
@@ -35,6 +35,8 @@ class Game:
                     print("There's no piece there.\n")
                 elif ((is_white and not piece.white) or (not is_white and piece.white)):
                     print("That's the opponent's piece.\n")
+                elif len(piece.get_moves(pos_vec)) == 0:
+                    print("That piece can't be moved.\n")
                 else:
                     valid_input = True
             except ValueError as e:
@@ -46,17 +48,20 @@ class Game:
         valid_input = False
 
         moves = piece.get_moves(pos)
-        self.board.display(list(itertools.chain.from_iterable(moves)), is_white)
+        move_positions = list(itertools.chain.from_iterable(moves))
+        self.board.display(move_positions, is_white)
 
         while not valid_input:
-            piece_pos = input("Enter position of piece: ")
+            piece_pos = input("Enter move position: ")
             try:
                 pos_vec = self.parse_input(piece_pos)
-                if (self.board[pos_vec] is None):
-                    print("There's no piece there.\n")
-                elif ((is_white and not self.board[pos_vec].white) or (not is_white and self.board[pos_vec].white)):
-                    print("That's the opponent's piece.\n")
+                if pos_vec not in move_positions:
+                    print("You can't move that piece there.\n")
                 else:
+                    for move_list in moves:
+                        if pos_vec in move_list:
+                            piece.move(pos, [move_list[:move_list.index(pos_vec) + 1]])
+                            break
                     valid_input = True
             except ValueError as e:
                 print(e)
