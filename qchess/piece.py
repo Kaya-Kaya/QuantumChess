@@ -18,8 +18,7 @@ class Piece(ABC):
     @abstractmethod
     def get_moves(self, position: Vector2) -> list[list[Vector2]]:
         """
-        Returns a list of possible moves for the piece from the given position.
-        For example, rook: [[left, left, left], [up, up, up], [right], [down, down]]
+        Returns a list of possible move paths for the piece from the given position.
         """
         pass
 
