@@ -45,27 +45,43 @@ class Game:
         return (piece, pos_vec)
     
     def move_piece(self, piece: Piece, pos: Vector2, is_white: bool):
-        valid_input = False
-
         moves = piece.get_moves(pos)
         move_positions = list(itertools.chain.from_iterable(moves))
         self.board.display(move_positions, is_white)
+        moves_to_make = []
+        done = False
 
-        while not valid_input:
-            piece_pos = input("Enter move position: ")
-            try:
-                pos_vec = self.parse_input(piece_pos)
-                if pos_vec not in move_positions:
-                    print("You can't move that piece there.\n")
-                else:
-                    for move_list in moves:
-                        if pos_vec in move_list:
-                            piece.move(pos, [move_list[:move_list.index(pos_vec) + 1]])
-                            break
-                    valid_input = True
-            except ValueError as e:
-                print(e)
+        for i in range(len(move_positions)):
+            valid_input = False
+            while not valid_input:
+                piece_pos = input("Enter move position: ")
+                try:
+                    pos_vec = self.parse_input(piece_pos)
+                    if pos_vec not in move_positions:
+                        print("You can't move that piece there.\n")
+                    else:
+                        for move_list in moves:
+                            if pos_vec in move_list:
+                                moves_to_make.append(move_list[:move_list.index(pos_vec) + 1])
+                                break
+                        valid_input = True
+                except ValueError as e:
+                    print(e)
 
+            
+            if i != len(move_positions) - 1:
+                while True:
+                    more = input("Would you like to split into more moves (y/n)? ")
+                    if more == 'y':
+                        break
+                    elif more == 'n':
+                        done = True
+                        break
+
+                if done:
+                    break
+
+        piece.move(pos, moves_to_make)
 
     def turn(self, is_white: bool):
         self.board.display()

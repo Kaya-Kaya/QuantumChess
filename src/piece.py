@@ -38,11 +38,18 @@ class Piece(ABC):
             for path in new_positions:
                 final_position = old_position
                 for position in path:
-                    if self.board[position] is not None:
-                        captured = self.board[position].try_capture(position)
-                        if captured:
-                            final_position = position
-                            break
+                    if self.board[position] is not None and self.board[position] != self:   
+                        if self.white != self.board[position].white:                     
+                            captured = self.board[position].try_capture(position)
+                            if captured:
+                                final_position = position
+                                break
+                        else:
+                            exists = self.board[position].collapse(position)
+                            if exists:
+                                break
+                            else:
+                                final_position = position
                     else:
                         final_position = position
                     
@@ -84,6 +91,7 @@ class Piece(ABC):
             if random.random() >= probability:
                 # Remove this position and update probabilities
                 del self.positions[position]
+                self.board[position] = None
                 for pos in self.positions:
                     self.positions[pos] /= 1 - probability
                 return False
